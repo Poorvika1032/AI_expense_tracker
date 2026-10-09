@@ -1,0 +1,18 @@
+﻿# Local secrets and environment
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Python and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local application data and generated artifacts
+*.db
+*.db-*
+instance/
+uploads/
+models/

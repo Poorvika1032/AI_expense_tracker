@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-theme="{{ session.get('theme','light') }}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#102845"><title>Overview · Wayfare</title><link rel="stylesheet" href="{{ url_for('static',filename='css/theme.css') }}"></head>
+<body>
+<header class="topbar"><a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-mark" aria-hidden="true">⌖</span> WAYFARE <span class="hide-mobile" style="font-weight:500;color:#a8c4d1">TRAVEL INTELLIGENCE</span></a><nav class="topnav" aria-label="Main navigation"><a href="{{ url_for('dashboard') }}">Overview</a><a href="{{ url_for('history') }}">Trips</a><a href="{{ url_for('reports') }}">Reports</a><a href="{{ url_for('profile') }}">Profile</a><form action="{{ url_for('logout') }}" method="post" style="margin:0"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button style="padding:8px 13px;background:#ffffff18">Sign out</button></form></nav></header>
+<main class="page-shell">
+  <section class="section-head fade-up"><div><div class="eyebrow">Your travel desk</div><h1>Good day, {{ session.get('user','traveler') }}.</h1><p class="muted" style="margin:0">Plan a new journey or take a look at your travel spending.</p></div><a class="button" href="#planner">Plan a trip <span aria-hidden="true">↗</span></a></section>
+  {% if error %}<div class="prediction" role="alert"><strong>We couldn't plan this trip.</strong><p>{{ error }}</p></div>{% endif %}
+  {% if trip_count is not none %}
+  <section class="grid stats-grid" aria-label="Travel summary">
+    <a class="card stat-card" href="{{ url_for('history') }}"><span class="stat-label">Saved trips</span><div class="stat-value" data-count="{{ trip_count }}" data-format="integer">{{ trip_count }}</div><span class="stat-sub">Your travel history</span></a>
+    <a class="card stat-card" href="{{ url_for('reports') }}"><span class="stat-label">Predicted travel spend</span><div class="stat-value" data-count="{{ total_spend }}" data-format="currency">₹{{ '%.0f'|format(total_spend) }}</div><span class="stat-sub">Across saved trips</span></a>
+    <a class="card stat-card" href="{{ url_for('analytics') }}"><span class="stat-label">Actual spending</span><div class="stat-value" data-count="{{ actual_spend }}" data-format="currency">₹{{ '%.0f'|format(actual_spend) }}</div><span class="stat-sub">Expenses you've recorded</span></a>
+    <a class="card stat-card" href="{{ url_for('analytics') }}"><span class="stat-label">Potential savings</span><div class="stat-value" data-count="{{ total_savings }}" data-format="currency">₹{{ '%.0f'|format(total_savings) }}</div><span class="stat-sub">From optimizer scenarios</span></a>
+  </section>
+  {% endif %}
+  <section class="dashboard-grid" id="planner">
+    <div>
+      <section class="card fade-up">
+        <div class="eyebrow">Plan with intelligence</div><h2>Where are you headed?</h2><p class="muted">Your estimates come from the saved Random Forest model. The planner compares all supported transport options.</p>
+        {% if not model_available and trip_count is not none %}<p class="auth-error" role="alert">Prediction model unavailable. Run <code>python train_model.py</code> to restore it.</p>{% endif %}
+        <form action="{{ url_for('predict') }}" method="post" id="planner-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="form-grid">
+            <div><label for="source">Leaving from</label><input id="source" name="source" placeholder="City or airport" autocomplete="off" maxlength="100" required></div>
+            <div><label for="destination">Going to</label><input id="destination" name="destination" placeholder="Where to?" autocomplete="off" maxlength="100" required></div>
+            <div><label for="start_date">Departure</label><input id="start_date" type="date" name="start_date"></div>
+            <div><label for="end_date">Return</label><input id="end_date" type="date" name="end_date"></div>
+            <div><label for="travelers">Travelers</label><input id="travelers" type="number" name="travelers" placeholder="1" value="1" min="1" max="100" required></div>
+            <div><label for="days">Trip length in days</label><input id="days" type="number" name="days" placeholder="4" value="4" min="1" max="365" required></div>
+            <div><label for="transportation">Preferred transport</label><select id="transportation" name="transportation" required><option value="Train">Train</option><option value="Bus">Bus</option><option value="Car">Car</option></select></div>
+            <div><label for="budget">Your budget (₹)</label><input id="budget" type="number" name="budget" placeholder="20000" min="1" step="0.01" required></div>
+            <div class="span-2"><button type="submit" id="predict-button">✦ &nbsp; Predict my trip cost</button><p class="hint" style="font-size:.8rem;margin:8px 0 0">This saves the trip and adds it to your travel history.</p></div>
+          </div>
+        </form>
+      </section>
+      {% if prediction %}
+      <section class="prediction fade-up" aria-live="polite"><div class="eyebrow">Model estimate</div><h2 style="margin:7px 0">Total Estimated Cost: ₹{{ '%.2f'|format(prediction) }}</h2><p>{{ recommendation }}</p><div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><p>Transport <strong>₹{{ transportation_cost }}</strong></p><p>Stay <strong>₹{{ accommodation_cost }}</strong></p><p>Food <strong>₹{{ food_cost }}</strong></p><p>Other <strong>₹{{ other_expenses }}</strong></p></div><p>Budget: <strong>₹{{ budget }}</strong> · {% if prediction <= budget %}<span style="color:var(--green)">Within budget</span>{% else %}<span style="color:var(--red)">Over budget by ₹{{ '%.2f'|format(prediction-budget) }}</span>{% endif %}</p>
+      {% if predictions %}<h3>Compare transport</h3><div class="transport-grid">{% for transport,details in predictions.items() %}<div class="card" style="padding:13px"><span class="stat-label">{{ transport }}</span><strong class="transport-cost" style="color:var(--ink)">₹{{ '%.0f'|format(details.total_cost) }}</strong><small>{% if details.total_cost <= budget %}Within budget{% else %}Over budget{% endif %}</small></div>{% endfor %}</div>{% endif %}</section>
+      {% endif %}
+    </div>
+    <aside class="planner-preview" aria-label="Live trip estimate">
+      <div class="eyebrow" style="color:#a7e4e3">Live trip preview</div><h2 style="margin:8px 0">A clearer view before you go.</h2>
+      <p id="preview-hint" style="color:#c2d5de;font-size:.88rem">Add your route, travelers, and budget to see a real model estimate.</p>
+      <div class="preview-route"><span id="preview-source">Origin</span><span aria-hidden="true">→</span><span id="preview-destination">Destination</span></div>
+      <div class="preview-kpis"><span><strong id="preview-days">4</strong> days</span><span><strong id="preview-travelers">1</strong> travelers</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:end;margin-top:24px"><div><span class="stat-label" style="color:#c2d5de">Estimated cost</span><div class="stat-value" id="preview-cost">—</div></div><span class="status-pill" id="budget-status">Add a budget</span></div>
+      <div class="budget-track" role="progressbar" aria-label="Predicted budget usage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="budget-fill"></span></div><p id="budget-detail" style="font-size:.86rem;color:#d5e7eb;margin:0">Budget meter uses the model estimate.</p>
+      <h3 style="margin:24px 0 0">Compare the ride</h3><div class="transport-grid" id="transport-options" aria-live="polite"><div class="transport-card" aria-disabled="true"><span class="transport-name">BUS</span><span class="transport-cost">—</span></div><div class="transport-card" aria-disabled="true"><span class="transport-name">TRAIN</span><span class="transport-cost">—</span></div><div class="transport-card" aria-disabled="true"><span class="transport-name">CAR</span><span class="transport-cost">—</span></div></div>
+      <div class="recommendation" id="live-recommendation">The best-value option appears after a valid route is entered.</div>
+    </aside>
+  </section>
+  {% if trip_count is not none %}
+  <section class="grid dashboard-grid" style="margin-top:22px">
+    <section class="card"><div class="section-head"><div><div class="eyebrow">Keep exploring</div><h2>Recent journeys</h2></div><a href="{{ url_for('history') }}">All trips →</a></div>
+      {% if recent_trips %}<ul class="trip-list">{% for trip in recent_trips %}<li><span><strong>{{ trip['source'] }} → {{ trip['destination'] }}</strong><br><span class="muted">{{ trip['days'] }} days · {{ trip['transportation'] }}</span></span><span style="text-align:right">₹{{ '%.0f'|format(trip['predicted_expense']) }}<br><a href="{{ url_for('trip_detail',trip_id=trip['id']) }}">View trip</a></span></li>{% endfor %}</ul>{% else %}<p class="muted">Your saved trips will show here.</p>{% endif %}
+    </section>
+    <section class="card"><div class="eyebrow">Your travel rhythm</div><h2>Good to know</h2><p class="muted">Most visited place</p><strong>{{ favorite }}</strong><p class="muted">Most used transport</p><strong>{{ common_transport }}</strong><p class="muted" style="margin-top:18px">Realized predicted-minus-actual variance</p><strong>₹{{ '%.2f'|format(actual_savings) }}</strong><p class="hint" style="font-size:.82rem">A positive value means recorded expenses are below the linked optimizer baseline.</p></section>
+  </section>
+  {% if upcoming_trips %}<section class="card" style="margin-top:22px"><div class="eyebrow">Coming up</div><h2>Upcoming trips</h2><ul class="trip-list">{% for trip in upcoming_trips %}<li><span>{{ trip['destination'] }} · {{ trip['start_date'] }}</span><a href="{{ url_for('trip_detail',trip_id=trip['id']) }}">Open plan →</a></li>{% endfor %}</ul><a href="{{ url_for('notifications') }}">View notifications</a></section>{% endif %}
+  {% endif %}
+  <nav class="quick-links" aria-label="Travel tools"><a href="{{ url_for('analytics') }}">Predicted vs actual</a><a href="{{ url_for('what_if') }}">What-if analysis</a><a href="{{ url_for('optimize_budget') }}">Budget optimizer</a><a href="{{ url_for('destination_recommendations') }}">Destinations</a><a href="{{ url_for('wishlist') }}">Wishlist</a><a href="{{ url_for('travel_calendar') }}">Trip calendar</a><a href="{{ url_for('travel_assistant') }}">Travel assistant</a><a href="{{ url_for('notifications') }}">Notifications</a><a href="{{ url_for('currency_converter') }}">Currency converter</a><a href="{{ url_for('itinerary') }}">Itinerary</a>{% if session.get('role')=='ADMIN' %}<a href="{{ url_for('admin_dashboard') }}">Admin</a>{% endif %}</nav>
+</main>
+<script src="{{ url_for('static',filename='js/dashboard.js') }}" defer></script>
+</body></html>

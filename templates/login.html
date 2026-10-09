@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" data-theme="{{ session.get('theme','light') }}">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102845"><title>Sign in · Wayfare</title>
+  <link rel="stylesheet" href="{{ url_for('static',filename='css/theme.css') }}">
+</head>
+<body class="auth-page">
+  <section class="auth-hero" aria-label="Travel planning">
+    <div class="hero-copy fade-up">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">⌖</span> WAYFARE <span class="eyebrow" style="color:#a7e4e3">TRAVEL INTELLIGENCE</span></div>
+      <h1>Travel smarter.<br>Spend better.</h1>
+      <p>AI-powered travel expense prediction and optimization, built around your plans and your budget.</p>
+      <p class="eyebrow" style="color:#a7e4e3">Plan with confidence · Explore with intention</p>
+    </div>
+  </section>
+  <main class="auth-form-wrap">
+    <section class="auth-card fade-up">
+      <div class="eyebrow">Welcome back</div><h2>Sign in to Wayfare</h2>
+      <p class="muted">Your next trip starts with a clearer budget.</p>
+      {% if error %}<p class="auth-error" role="alert">{{ error }}</p>{% endif %}
+      <form action="{{ url_for('login') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="auth-fields">
+          <div><label for="email">Email address</label><input id="email" type="email" name="email" autocomplete="email" required autofocus placeholder="you@example.com"></div>
+          <div><label for="password">Password</label><input id="password" type="password" name="password" autocomplete="current-password" required placeholder="Your password"></div>
+        </div>
+        <button type="submit">Sign in <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="muted" style="text-align:center;margin:22px 0 0">New to Wayfare? <a href="{{ url_for('register') }}">Create an account</a></p>
+    </section>
+  </main>
+</body></html>

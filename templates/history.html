@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html data-theme="{{ session.get('theme', 'light') }}">
+<head><link rel="stylesheet" href="{{ url_for('static',filename='css/theme.css') }}">
+    <title>Travel History</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fc;
+        }
+
+        .header {
+            background: #4a6cf7;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            width: 95%;
+            margin: 30px auto;
+            overflow-x: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #4a6cf7;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9ff;
+        }
+
+        .button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: #4a6cf7;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>AI Travel Expense Tracker</h1>
+        <p>Travel History</p>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Your Travel History</h2><form method="get"><input name="q" placeholder="Search source or destination"><input name="destination" placeholder="Filter destination"><select name="transportation"><option value="">Any transport</option><option>Bus</option><option>Train</option><option>Car</option></select><select name="budget_status"><option value="">Any budget status</option><option value="within">Within budget</option><option value="over">Over budget</option></select><input name="date_from" type="date"><input name="date_to" type="date"><input name="expense_min" type="number" min="0" step="0.01" placeholder="Min estimate"><input name="expense_max" type="number" min="0" step="0.01" placeholder="Max estimate"><select name="sort"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="cost_high">Highest cost</option><option value="cost_low">Lowest cost</option><option value="destination">Destination</option></select><button>Filter</button></form><p>{{ total }} matching trips &middot; Page {{ page }} of {{ pages }}</p><h2>📋 Your Travel History</h2>
+
+            {% if history %}
+                <table>
+                    <tr>
+                        <th>Source</th>
+                        <th>Destination</th>
+                        <th>Travelers</th>
+                        <th>Days</th>
+                        <th>Transportation</th>
+                        <th>Transport Cost</th>
+                        <th>Accommodation</th>
+                        <th>Food</th>
+                        <th>Other</th>
+                        <th>Total Expense</th>
+                        <th>Budget</th><th>Details</th>
+                    </tr>
+
+                    {% for trip in history %}
+                        <tr>
+                            <td>{{ trip[0] }}</td>
+                            <td>{{ trip[1] }}</td>
+                            <td>{{ trip[2] }}</td>
+                            <td>{{ trip[3] }}</td>
+                            <td>{{ trip[4] }}</td>
+                            <td>₹{{ trip[5] }}</td>
+                            <td>₹{{ trip[6] }}</td>
+                            <td>₹{{ trip[7] }}</td>
+                            <td>₹{{ trip[8] }}</td>
+                            <td><strong>₹{{ trip[9] }}</strong></td>
+                            <td>₹{{ trip[10] }}</td>
+                            <td><a href="{{ url_for('trip_detail',trip_id=trip[11]) }}">Details / expenses</a></td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <p style="text-align:center;">
+                    No travel history available yet.
+                </p>
+            {% endif %}
+
+            <p><a href="{{ url_for('history',page=page-1,q=request.args.get('q',''),destination=request.args.get('destination',''),transportation=request.args.get('transportation',''),budget_status=request.args.get('budget_status',''),date_from=request.args.get('date_from',''),date_to=request.args.get('date_to',''),expense_min=request.args.get('expense_min',''),expense_max=request.args.get('expense_max',''),sort=request.args.get('sort','newest')) if page>1 else '#' }}">Previous</a> &middot; <a href="{{ url_for('history',page=page+1,q=request.args.get('q',''),destination=request.args.get('destination',''),transportation=request.args.get('transportation',''),budget_status=request.args.get('budget_status',''),date_from=request.args.get('date_from',''),date_to=request.args.get('date_to',''),expense_min=request.args.get('expense_min',''),expense_max=request.args.get('expense_max',''),sort=request.args.get('sort','newest')) if page<pages else '#' }}">Next</a></p>
+            <div style="text-align:center;">
+                <a href="/dashboard" class="button">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
